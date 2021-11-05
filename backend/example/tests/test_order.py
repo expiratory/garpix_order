@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from ..models import Order, Service
+from ..models import Order, Service, Invoice
 
 
 class OrderTestCase(TestCase):
@@ -15,6 +15,13 @@ class OrderTestCase(TestCase):
         self.order = Order.objects.create(number='#test', user=self.user, total_amount=self.total_price * self.quantity)
         self.service = Service.objects.create(order=self.order, amount=self.total_price, quantity=self.quantity)
 
-    def test_pay_full(self):
+    def test_amount(self):
         order = self.order
         self.assertEqual(order.items_amount(), self.total_price * self.quantity)
+
+    def test_payfull(self):
+        order = self.order
+        invoice = Invoice.objects.create(title=f'order-{order.id}', order=order, amount=order.total_amount)
+        invoice.pending()
+        invoice.succeeded()
+        self.assertEqual(order.payed_amount, self.total_price * self.quantity)
