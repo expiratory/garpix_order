@@ -1,7 +1,7 @@
 from django.db import models
 from garpix_page.models import BasePage
 
-from garpix_order.models import BaseOrder, BaseOrderItem
+from garpix_order.models import BaseOrder, BaseOrderItem, BaseInvoice
 
 
 class ExamplePage(BasePage):
@@ -14,9 +14,24 @@ class ExamplePage(BasePage):
 
 
 class Order(BaseOrder):
-    pass
+    class Meta:
+        verbose_name = 'Ордер'
+        verbose_name_plural = 'Ордера'
 
 
 class Service(BaseOrderItem):
+    is_paid = models.BooleanField(default=False, verbose_name='Оплачено')
+
     def pay(self):
-        print('pay')
+        self.is_paid = True
+        self.save()
+
+    class Meta:
+        verbose_name = 'Услуга'
+        verbose_name_plural = 'Услуги'
+
+
+class Invoice(BaseInvoice):
+    class Meta:
+        verbose_name = 'Платеж'
+        verbose_name_plural = 'Платежи'

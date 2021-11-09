@@ -19,4 +19,4 @@ class BaseOrderItem(PolymorphicModel):
         verbose_name_plural = 'Продукты заказа'
 
     def __str__(self):
-        return f'Объект заказа {self.order}'
+        return f'Объект заказа - {self.order}'

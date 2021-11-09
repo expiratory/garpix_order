@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('example', '0001_initial'),
-        ('garpix_order', '0001_initial'),
+        ('garpix_order', '0001_squashed_0008_auto_20211105_1533'),
     ]
 
     operations = [

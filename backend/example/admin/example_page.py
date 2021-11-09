@@ -3,12 +3,20 @@ from django.contrib import admin
 from garpix_page.admin import BasePageAdmin
 from polymorphic.admin import PolymorphicParentModelAdmin, PolymorphicChildModelAdmin
 from garpix_order.models import BaseOrder, BaseOrderItem, BaseInvoice
-from ..models.example_page import Service, Order
+from ..models.example_page import Service, Order, Invoice
+from fsm_admin.mixins import FSMTransitionMixin
 
 
 @admin.register(ExamplePage)
 class ExamplePageAdmin(BasePageAdmin):
     pass
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(PolymorphicChildModelAdmin, FSMTransitionMixin, admin.ModelAdmin):
+    readonly_fields = ('status',)
+    fsm_field = ('status',)
+    child_models = ()
 
 
 @admin.register(Order)
@@ -34,6 +42,8 @@ class BaseOrderItemAdmin(PolymorphicParentModelAdmin):
 
 
 @admin.register(BaseInvoice)
-class BaseInvoiceAdmin(PolymorphicParentModelAdmin):
+class BaseInvoiceAdmin(PolymorphicParentModelAdmin, FSMTransitionMixin, admin.ModelAdmin):
+    fsm_field = ('status',)
+    readonly_fields = ('status',)
     base_model = BaseInvoice
     child_models = (BaseInvoice,)
