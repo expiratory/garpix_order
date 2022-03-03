@@ -1,6 +1,6 @@
 from django.http import JsonResponse
-from ..models.config import Config
-from ..models.payment import CloudPaymentInvoice
+from ...models import Config
+from ...models import CloudPaymentInvoice
 
 
 def payment_data_view(request):

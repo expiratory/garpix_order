@@ -9,6 +9,7 @@ garpixcms = ">=1.0.0"
 django-polymorphic = "*"
 django-fsm = "*"
 django-fsm-admin = "*"
+coverage = "*"
 
 [dev-packages]
 

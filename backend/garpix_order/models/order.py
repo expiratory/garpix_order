@@ -1,10 +1,32 @@
 from django.db import models, transaction
 from django.db.models import F, Sum, DecimalField
+from django_fsm import FSMField, transition
 from polymorphic.models import PolymorphicModel
 from django.conf import settings
+from .order_item import BaseOrderItem
+
+
+OrderItemStatus = BaseOrderItem.OrderItemStatus
 
 
 class BaseOrder(PolymorphicModel):
+    class OrderStatus:
+        CREATED = 'created'
+        PAYED_FULL = 'payed_full'
+        PAYED_PARTIAL = 'payed_partial'
+        REFUNDED = 'refunded'
+        CANCELED = 'cancel'
+
+        CHOICES = (
+            (CREATED, 'CREATED'),
+            (PAYED_FULL, 'PAYED_FULL'),
+            (PAYED_PARTIAL, 'PAYED_PARTIAL'),
+            (CANCELED, 'CANCELED'),
+            (REFUNDED, 'REFUNDED'),
+        )
+
+
+    status = FSMField(choices=OrderStatus.CHOICES, default=OrderStatus.CREATED)
     number = models.CharField(max_length=255, verbose_name='Номер заказа')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Пользователь")
     total_amount = models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Полная стоимость')
@@ -15,23 +37,40 @@ class BaseOrder(PolymorphicModel):
     def make_instance(self):
         pass
 
-    def items(self):
+    def items_all(self):
         return self.baseorderitem_set.all()
 
+    def active_items(self):
+        return self.items_all().exclude(status__in=(OrderItemStatus.CANCELED, OrderItemStatus.REFUNDED,))
+
     def items_amount(self):
-        amount = self.items().aggregate(
+        amount = self.active_items().aggregate(
+            total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
+        return amount.get('total', 0)
+
+    def paid_items(self):
+        return self.items_all().filter(status=BaseOrderItem.OrderItemStatus.PAYED_FULL)
+
+    def paid_items_amount(self):
+        amount = self.paid_items().aggregate(
             total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
         return amount.get('total', 0)
 
     @transaction.atomic
+    @transition(field=status, source=(OrderStatus.CREATED,), target=OrderStatus.PAYED_FULL)
     def pay_full(self):
-        for item in self.items():
+        for item in self.active_items():
             item.pay()
+            item.save()
         self.payed_amount = self.total_amount
         self.save()
 
+    @transaction.atomic
+    @transition(field=status, source=(OrderStatus.CREATED, OrderStatus.PAYED_PARTIAL), target=OrderStatus.PAYED_PARTIAL)
     def pay_partially(self, item):
-        pass
+        item.pay()
+        item.save()
+        self.payed_amount = self.paid_items_amount()
 
     def cancel(self):
         pass

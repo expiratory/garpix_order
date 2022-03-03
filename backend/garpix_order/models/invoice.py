@@ -51,6 +51,11 @@ class BaseInvoice(PolymorphicModel):
 
     def pay_full(self):
         self.order.pay_full()
+        self.order.save()  # сохраняем для верности
+
+    def pay_partially(self, item):
+        self.order.pay_partially(item)
+        self.order.save()
 
     def cancel(self):
         self.order.cancel()
@@ -63,10 +68,13 @@ class BaseInvoice(PolymorphicModel):
     def waiting_for_capture(self):
         pass
 
-    @transition(field=status, source=[InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
+    @transition(field=status, source=[InvoiceStatus.CREATED, InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
                 target=InvoiceStatus.SUCCEEDED)
-    def succeeded(self):
-        self.pay_full()
+    def succeeded(self, item=None):
+        if item is None:
+            self.pay_full()
+        else:
+            self.pay_partially(item)
 
     @transition(field=status,
                 source=[InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE, InvoiceStatus.SUCCEEDED],

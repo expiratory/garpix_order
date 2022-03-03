@@ -1,9 +1,22 @@
 from django.http import JsonResponse
-from ..models import CloudPaymentInvoice
+from ...models import CloudPaymentInvoice
 from decimal import Decimal
-from django.conf import settings
+from django.db import transaction
 
 
+PAYMENT_STATUS_COMPLETED = CloudPaymentInvoice.PAYMENT_STATUS_COMPLETED
+PAYMENT_STATUS_CANCELLED = CloudPaymentInvoice.PAYMENT_STATUS_CANCELLED
+PAYMENT_STATUS_DECLINED = CloudPaymentInvoice.PAYMENT_STATUS_DECLINED
+
+
+def callback(payment):
+    if payment.status == PAYMENT_STATUS_COMPLETED:
+        payment.succeeded()
+    elif payment.status in (PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_DECLINED):
+        payment.failed()
+
+
+@transaction.atomic
 def default_view(request):
     if request.method == 'post':
         try:
@@ -14,7 +27,6 @@ def default_view(request):
             if payment.price != Decimal(request.POST.get('Amount')):
                 raise Exception('Wrong price')
             payment.save()
-            callback = __import__(settings.GARPIX_PAYMENT_STATUS_CHANGED_CALLBACK)
             callback(payment)
         except CloudPaymentInvoice.DoesNotExist:
             return JsonResponse({"code": 1})
