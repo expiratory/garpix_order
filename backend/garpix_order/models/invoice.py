@@ -4,7 +4,6 @@ from .order import BaseOrder
 from django_fsm import FSMField, transition
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 
 
 class BaseInvoice(PolymorphicModel):
@@ -35,9 +34,6 @@ class BaseInvoice(PolymorphicModel):
     order = models.ForeignKey(BaseOrder, on_delete=models.CASCADE, verbose_name='Заказ', related_name='Заказ')
     amount = models.DecimalField(decimal_places=2, max_digits=12, verbose_name='Сумма', default=0)
     status = FSMField(choices=InvoiceStatus.CHOICES, default=InvoiceStatus.CREATED)
-    payment_type = models.CharField(default=settings.CHOICES_PAYMENT_TYPES[0][0],
-                                    max_length=255,
-                                    choices=settings.CHOICES_PAYMENT_TYPES, verbose_name='Тип оплаты')
     client_data = models.JSONField(verbose_name='Client payment process data', blank=True, null=True)
     provider_data = models.JSONField(verbose_name='Provider payment process data', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')

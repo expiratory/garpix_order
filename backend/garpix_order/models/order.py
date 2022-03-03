@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Sum, DecimalField
 from polymorphic.models import PolymorphicModel
 from django.conf import settings
@@ -23,6 +23,7 @@ class BaseOrder(PolymorphicModel):
             total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
         return amount.get('total', 0)
 
+    @transaction.atomic
     def pay_full(self):
         for item in self.items():
             item.pay()
