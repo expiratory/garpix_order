@@ -9,25 +9,21 @@ PAYMENT_STATUS_CANCELLED = CloudPaymentInvoice.PAYMENT_STATUS_CANCELLED
 PAYMENT_STATUS_DECLINED = CloudPaymentInvoice.PAYMENT_STATUS_DECLINED
 
 
-def callback(payment):
-    if payment.status == PAYMENT_STATUS_COMPLETED:
-        payment.succeeded()
-    elif payment.status in (PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_DECLINED):
-        payment.failed()
-
-
 @transaction.atomic
 def default_view(request):
-    if request.method == 'post':
+    if request.method == 'POST':
         try:
             payment = CloudPaymentInvoice.objects.get(order_number=request.POST.get('InvoiceId'))
-            payment.status = CloudPaymentInvoice.MAP_STATUS[request.POST.get('Status')]
+            status = request.POST.get('Status')
             payment.is_test = request.POST.get('TestMode') == '1'
             payment.transaction_id = request.POST.get('TransactionId')
-            if payment.price != Decimal(request.POST.get('Amount')):
+            if payment.amount != Decimal(request.POST.get('Amount')):
                 raise Exception('Wrong price')
+            if status == PAYMENT_STATUS_COMPLETED:
+                payment.succeeded()
+            elif status in (PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_DECLINED):
+                payment.failed()
             payment.save()
-            callback(payment)
         except CloudPaymentInvoice.DoesNotExist:
             return JsonResponse({"code": 1})
         except Exception:

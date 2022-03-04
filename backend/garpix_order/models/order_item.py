@@ -37,6 +37,14 @@ class BaseOrderItem(PolymorphicModel):
     def pay(self):
         pass
 
+    @transition(
+        field=status,
+        source=(OrderItemStatus.PAYED_FULL, OrderItemStatus.PAYED_PARTIAL,),
+        target=OrderItemStatus.REFUNDED
+    )
+    def refunded(self):
+        pass
+
     class Meta:
         verbose_name = 'Продукт заказа'
         verbose_name_plural = 'Продукты заказа'

@@ -46,6 +46,9 @@ class BaseOrder(PolymorphicModel):
     def items_amount(self):
         amount = self.active_items().aggregate(
             total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
+        total = amount.get('total', 0)
+        if total is None:
+            return 0
         return amount.get('total', 0)
 
     def paid_items(self):
@@ -54,7 +57,10 @@ class BaseOrder(PolymorphicModel):
     def paid_items_amount(self):
         amount = self.paid_items().aggregate(
             total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
-        return amount.get('total', 0)
+        total = amount.get('total', 0)
+        if total is None:
+            return 0
+        return total
 
     @transaction.atomic
     @transition(field=status, source=(OrderStatus.CREATED,), target=OrderStatus.PAYED_FULL)
@@ -72,6 +78,15 @@ class BaseOrder(PolymorphicModel):
         item.save()
         self.payed_amount = self.paid_items_amount()
 
+    @transaction.atomic
+    @transition(field=status, source=(OrderStatus.PAYED_FULL, OrderStatus.PAYED_PARTIAL), target=OrderStatus.REFUNDED)
+    def refunded_full(self):
+        for item in self.active_items():
+            item.refunded()
+            item.save()
+        self.payed_amount = 0
+        self.save()
+    
     def cancel(self):
         pass
 

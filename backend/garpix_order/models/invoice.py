@@ -1,8 +1,7 @@
 from django.db import models
 from polymorphic.models import PolymorphicModel
 from .order import BaseOrder
-from django_fsm import FSMField, transition
-from django.core.exceptions import ValidationError
+from django_fsm import RETURN_VALUE, FSMField, TransitionNotAllowed, transition
 from django.utils.translation import gettext_lazy as _
 
 
@@ -39,16 +38,6 @@ class BaseInvoice(PolymorphicModel):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
 
-    def clean(self, *args, **kwargs):
-        order = self.order
-        total_amount = order.total_amount
-        payed_amount = order.payed_amount
-        amount = self.amount
-        if amount <= 0:
-            raise ValidationError(_('Сумма должна быть больше 0'))
-        if payed_amount + amount > total_amount:
-            raise ValidationError(_('Сумма больше стоимости заказа'))
-
     def pay_full(self):
         self.order.pay_full()
         self.order.save()  # сохраняем для верности
@@ -56,9 +45,6 @@ class BaseInvoice(PolymorphicModel):
     def pay_partially(self, item):
         self.order.pay_partially(item)
         self.order.save()
-
-    def cancel(self):
-        self.order.cancel()
 
     @transition(field=status, source=[InvoiceStatus.CREATED, ], target=InvoiceStatus.PENDING)
     def pending(self):
@@ -68,25 +54,82 @@ class BaseInvoice(PolymorphicModel):
     def waiting_for_capture(self):
         pass
 
-    @transition(field=status, source=[InvoiceStatus.CREATED, InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
-                target=InvoiceStatus.SUCCEEDED)
-    def succeeded(self, item=None):
-        if item is None:
-            self.pay_full()
-        else:
+    def can_succeeded(self):
+        """Основные проверки при оплате"""
+        order = self.order
+        total_amount = order.total_amount
+        payed_amount = order.payed_amount
+        amount = self.amount
+        if amount <= 0:
+            return False
+        if payed_amount + amount > total_amount:
+            return False
+        if amount != total_amount:
+            return False
+        return True
+
+    @transition(
+        field=status,
+        source=[InvoiceStatus.CREATED, InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
+        target=InvoiceStatus.SUCCEEDED,
+        conditions=[can_succeeded]
+    )
+    def succeeded(self):
+        self.pay_full()
+
+    def can_succeeded_partially(self):
+        """Основные проверки при оплате"""
+        order = self.order
+        total_amount = order.total_amount
+        payed_amount = order.payed_amount
+        amount = self.amount
+        if amount <= 0:
+            return False
+        if payed_amount + amount > total_amount:
+            return False
+        return True
+
+    @transition(
+        field=status,
+        source=[InvoiceStatus.CREATED, InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
+        target=RETURN_VALUE(InvoiceStatus.SUCCEEDED, InvoiceStatus.FAILED),
+        conditions=[can_succeeded_partially]
+    )
+    def succeeded_partially(self, item=None):
+        """Если не переделаи оплачиваемый элемент, то переводим в failed"""
+        try:
             self.pay_partially(item)
+            return self.InvoiceStatus.SUCCEEDED
+        except:
+            return self.InvoiceStatus.FAILED
 
     @transition(field=status,
-                source=[InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE, InvoiceStatus.SUCCEEDED],
+                source=[InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
                 target=InvoiceStatus.CANCELED, on_error=InvoiceStatus.FAILED)
     def canceled(self):
-        self.cancel()
-
-    @transition(field=status,
-                source=[InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE, InvoiceStatus.SUCCEEDED],
-                target=InvoiceStatus.REFUNDED, on_error=InvoiceStatus.FAILED)
-    def refunded(self):
         pass
+
+    def can_refund(self):
+        order = self.order
+        amount = self.amount
+        if order.payed_amount != amount:
+            return False
+        if order.status != order.OrderStatus.PAYED_FULL:
+            return False
+        if order.total_amount != order.payed_amount:
+            return False
+        return True
+
+    @transition(
+        field=status,
+        source=[InvoiceStatus.CREATED, InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
+        target=InvoiceStatus.REFUNDED,
+        on_error=InvoiceStatus.FAILED,
+        conditions=[can_refund]
+    )
+    def refunded(self):
+        self.order.refunded_full()
+        self.order.save()
 
     @transition(field=status, source=[InvoiceStatus.CREATED, InvoiceStatus.PENDING, InvoiceStatus.WAITING_FOR_CAPTURE],
                 target=InvoiceStatus.FAILED)
