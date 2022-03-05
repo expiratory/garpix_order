@@ -1,19 +1,19 @@
 from django.http import JsonResponse
-from ...models import CloudPaymentInvoice
+from ...models import CloudPayment
 from decimal import Decimal
 from django.db import transaction
 
 
-PAYMENT_STATUS_COMPLETED = CloudPaymentInvoice.PAYMENT_STATUS_COMPLETED
-PAYMENT_STATUS_CANCELLED = CloudPaymentInvoice.PAYMENT_STATUS_CANCELLED
-PAYMENT_STATUS_DECLINED = CloudPaymentInvoice.PAYMENT_STATUS_DECLINED
+PAYMENT_STATUS_COMPLETED = CloudPayment.PAYMENT_STATUS_COMPLETED
+PAYMENT_STATUS_CANCELLED = CloudPayment.PAYMENT_STATUS_CANCELLED
+PAYMENT_STATUS_DECLINED = CloudPayment.PAYMENT_STATUS_DECLINED
 
 
 @transaction.atomic
 def default_view(request):
     if request.method == 'POST':
         try:
-            payment = CloudPaymentInvoice.objects.get(order_number=request.POST.get('InvoiceId'))
+            payment = CloudPayment.objects.get(order_number=request.POST.get('InvoiceId'))
             status = request.POST.get('Status')
             payment.is_test = request.POST.get('TestMode') == '1'
             payment.transaction_id = request.POST.get('TransactionId')
@@ -24,7 +24,7 @@ def default_view(request):
             elif status in (PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_DECLINED):
                 payment.failed()
             payment.save()
-        except CloudPaymentInvoice.DoesNotExist:
+        except CloudPayment.DoesNotExist:
             return JsonResponse({"code": 1})
         except Exception:
             return JsonResponse({"code": 2})

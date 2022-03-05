@@ -1,12 +1,10 @@
+import re
 from django.db import models, transaction
 from django.db.models import F, Sum, DecimalField
-from django_fsm import FSMField, transition
+from django_fsm import RETURN_VALUE, FSMField, transition
 from polymorphic.models import PolymorphicModel
 from django.conf import settings
-from .order_item import BaseOrderItem
-
-
-OrderItemStatus = BaseOrderItem.OrderItemStatus
+from garpix_order.models.payment import BasePayment
 
 
 class BaseOrder(PolymorphicModel):
@@ -34,61 +32,64 @@ class BaseOrder(PolymorphicModel):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
 
-    def make_instance(self):
-        pass
+    def make_full_payment(self, **kwargs):
+        return BasePayment.objects.create(order=self, amount=self.total_amount, **kwargs)
 
     def items_all(self):
         return self.baseorderitem_set.all()
 
-    def active_items(self):
-        return self.items_all().exclude(status__in=(OrderItemStatus.CANCELED, OrderItemStatus.REFUNDED,))
-
     def items_amount(self):
-        amount = self.active_items().aggregate(
+        amount = self.items_all().aggregate(
             total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
         total = amount.get('total', 0)
         if total is None:
             return 0
         return amount.get('total', 0)
 
-    def paid_items(self):
-        return self.items_all().filter(status=BaseOrderItem.OrderItemStatus.PAYED_FULL)
-
-    def paid_items_amount(self):
-        amount = self.paid_items().aggregate(
-            total=Sum(F('amount') * F('quantity'), output_field=DecimalField()))
-        total = amount.get('total', 0)
+    def aggregate_amount(self):
+        payments = self.payments.all().filter(status=BasePayment.PaymentStatus.SUCCEEDED)
+        result = payments.aggregate(
+            total=Sum('amount')
+        )
+        total = result.get('total')
         if total is None:
             return 0
-        return total
+        return result.get('total')
 
     @transaction.atomic
-    @transition(field=status, source=(OrderStatus.CREATED,), target=OrderStatus.PAYED_FULL)
-    def pay_full(self):
-        for item in self.active_items():
-            item.pay()
-            item.save()
-        self.payed_amount = self.total_amount
-        self.save()
+    @transition(field=status, source=(OrderStatus.CREATED, OrderStatus.PAYED_PARTIAL,), target=RETURN_VALUE(OrderStatus.PAYED_FULL, OrderStatus.PAYED_PARTIAL))
+    def pay(self, payment):
+        self.payed_amount = self.aggregate_amount() + payment.amount
+        if self.payed_amount == self.total_amount:
+            return self.OrderStatus.PAYED_FULL
+        return self.OrderStatus.PAYED_PARTIAL
 
     @transaction.atomic
-    @transition(field=status, source=(OrderStatus.CREATED, OrderStatus.PAYED_PARTIAL), target=OrderStatus.PAYED_PARTIAL)
-    def pay_partially(self, item):
-        item.pay()
-        item.save()
-        self.payed_amount = self.paid_items_amount()
+    @transition(
+        field=status,
+        source=(OrderStatus.PAYED_FULL, OrderStatus.PAYED_PARTIAL),
+        target=RETURN_VALUE(OrderStatus.REFUNDED, OrderStatus.PAYED_PARTIAL)
+    )
+    def refunded(self, payment):
+        self.payed_amount = self.payed_amount - payment.amount
+        if self.payed_amount == 0:
+            return self.OrderStatus.REFUNDED
+        return self.OrderStatus.PAYED_PARTIAL
 
-    @transaction.atomic
-    @transition(field=status, source=(OrderStatus.PAYED_FULL, OrderStatus.PAYED_PARTIAL), target=OrderStatus.REFUNDED)
-    def refunded_full(self):
-        for item in self.active_items():
-            item.refunded()
-            item.save()
-        self.payed_amount = 0
-        self.save()
-    
     def cancel(self):
         pass
+
+    @classmethod
+    def split_order(cls, number, item):
+        old_order = item.order
+        if old_order.status == cls.OrderStatus.CREATED:
+            order = cls.objects.create(number=number, user=old_order.user, total_amount=item.full_amount())
+            item.order = order
+            item.save()
+            old_order.total_amount = old_order.items_amount()
+            old_order.save()
+            return order
+        return None
 
     def __str__(self):
         return self.number

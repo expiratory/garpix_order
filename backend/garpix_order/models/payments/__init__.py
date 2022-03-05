@@ -1,2 +1,2 @@
-from .cash import CashInvoice
-from .cloudpayments import CloudPaymentInvoice
+from .cash import CashPayment
+from .cloudpayments import CloudPayment
