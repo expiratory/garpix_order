@@ -5,6 +5,10 @@ from django.utils.translation import gettext_lazy as _
 
 
 class BasePayment(PolymorphicModel):
+    """
+    Базовая модель для хранения полученыых платежей по заказу. 
+    Можно наследоваться для создания своих способов оплаты. 
+    """
     class PaymentStatus:
         CREATED = 'created'
         PENDING = 'pending'

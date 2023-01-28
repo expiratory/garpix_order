@@ -13,7 +13,7 @@ class ExamplePageAdmin(BasePageAdmin):
 
 
 @admin.register(Invoice)
-class InvoiceAdmin(PolymorphicChildModelAdmin, FSMTransitionMixin, admin.ModelAdmin):
+class InvoiceAdmin(FSMTransitionMixin, admin.ModelAdmin):
     readonly_fields = ('status',)
     fsm_field = ('status',)
     child_models = ()
@@ -46,4 +46,4 @@ class BasePaymentAdmin(PolymorphicParentModelAdmin, FSMTransitionMixin, admin.Mo
     fsm_field = ('status',)
     readonly_fields = ('status',)
     base_model = BasePayment
-    child_models = (BasePayment,)
+    child_models = (Invoice,)

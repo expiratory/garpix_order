@@ -23,12 +23,16 @@ class BaseOrder(PolymorphicModel):
             (REFUNDED, 'REFUNDED'),
         )
 
+    decimalfield_kwargs = {
+        'max_digits': 12,
+        'decimal_places': 2,
+    }
 
     status = FSMField(choices=OrderStatus.CHOICES, default=OrderStatus.CREATED)
     number = models.CharField(max_length=255, verbose_name='Номер заказа')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Пользователь")
-    total_amount = models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Полная стоимость')
-    payed_amount = models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Оплачено')
+    total_amount = models.DecimalField(default=0, **decimalfield_kwargs, verbose_name='Полная стоимость')
+    payed_amount = models.DecimalField(default=0, **decimalfield_kwargs, verbose_name='Оплачено')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
 
@@ -46,7 +50,7 @@ class BaseOrder(PolymorphicModel):
             return 0
         return amount.get('total', 0)
 
-    def aggregate_amount(self):
+    def payment_amount(self):
         payments = self.payments.all().filter(status=BasePayment.PaymentStatus.SUCCEEDED)
         result = payments.aggregate(
             total=Sum('amount')
@@ -59,7 +63,7 @@ class BaseOrder(PolymorphicModel):
     @transaction.atomic
     @transition(field=status, source=(OrderStatus.CREATED, OrderStatus.PAYED_PARTIAL,), target=RETURN_VALUE(OrderStatus.PAYED_FULL, OrderStatus.PAYED_PARTIAL))
     def pay(self, payment):
-        self.payed_amount = self.aggregate_amount() + payment.amount
+        self.payed_amount = self.payment_amount() + payment.amount
         if self.payed_amount == self.total_amount:
             return self.OrderStatus.PAYED_FULL
         return self.OrderStatus.PAYED_PARTIAL
