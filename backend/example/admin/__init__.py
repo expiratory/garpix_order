@@ -1,1 +1,1 @@
-from .example_page import ExamplePageAdmin
+from .example_page import *
