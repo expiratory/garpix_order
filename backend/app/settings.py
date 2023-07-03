@@ -5,3 +5,8 @@ INSTALLED_APPS += [
     'example',
     'fsm_admin'
 ]
+
+MIGRATION_MODULES.update({  # noqa:F405
+    'fcm_django': 'app.migrations.fcm_django',
+    'garpix_order': 'app.migrations.garpix_order'
+})
