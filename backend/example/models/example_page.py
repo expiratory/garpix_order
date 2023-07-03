@@ -1,6 +1,6 @@
 from django.db import models
 from garpix_page.models import BasePage
-from garpix_order.models import BaseOrder, BaseOrderItem, BaseInvoice
+from garpix_order.models import BaseOrder, BaseOrderItem, BasePayment
 
 
 class ExamplePage(BasePage):
@@ -30,7 +30,7 @@ class Service(BaseOrderItem):
         verbose_name_plural = 'Услуги'
 
 
-class Invoice(BaseInvoice):
+class Invoice(BasePayment):
     class Meta:
         verbose_name = 'Платеж'
         verbose_name_plural = 'Платежи'

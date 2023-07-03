@@ -1,7 +1,7 @@
 # Garpix Order
 
 ```python
-from garpix_order.models import BaseOrder, BaseOrderItem, BaseInvoice
+from garpix_order.models import BaseOrder, BaseOrderItem, BasePayment
 
 
 class Order(BaseOrder):
@@ -13,7 +13,7 @@ class Service(BaseOrderItem):
         pass
 
 
-class Invoice(BaseInvoice):
+class Invoice(BasePayment):
     pass
 ```
 
