@@ -16,4 +16,5 @@ ROBOKASSA = {
     'PASSWORD_1': str(os.getenv('ROBOKASSA_PASSWORD_1')),
     'PASSWORD_2': str(os.getenv('ROBOKASSA_PASSWORD_2')),
     'IS_TEST': str(os.getenv('ROBOKASSA_IS_TEST', 0)),
+    'ALGORITHM': 'md5'
 }

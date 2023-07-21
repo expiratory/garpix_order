@@ -16,6 +16,7 @@ class RobokassaService:
     password_1 = settings.ROBOKASSA['PASSWORD_1']
     password_2 = settings.ROBOKASSA['PASSWORD_2']
     is_test = settings.ROBOKASSA['IS_TEST']
+    algorithm = settings.ROBOKASSA['ALGORITHM']
 
     @classmethod
     def get_amount_with_decimals(cls, amount: decimal) -> str:
@@ -30,9 +31,9 @@ class RobokassaService:
 
     @classmethod
     def calculate_signature(cls, *args) -> str:
-        """Create signature MD5.
+        """Create signature (MD5 - default).
         """
-        return hashlib.md5(':'.join(str(arg) for arg in args).encode()).hexdigest()
+        return getattr(hashlib, cls.algorithm, 'md5')(':'.join(str(arg) for arg in args).encode()).hexdigest()
 
     @classmethod
     def generate_payment_link(cls, payment) -> str:
