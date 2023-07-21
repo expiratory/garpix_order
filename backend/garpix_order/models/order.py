@@ -1,10 +1,12 @@
 import re
+
+from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.db.models import F, Sum, DecimalField
 from django_fsm import RETURN_VALUE, FSMField, transition
 from polymorphic.models import PolymorphicModel
-from django.conf import settings
 from garpix_order.models.payment import BasePayment
+from garpix_order.models.payments.recurring import Recurring
 
 
 class BaseOrder(PolymorphicModel):
@@ -30,9 +32,11 @@ class BaseOrder(PolymorphicModel):
 
     status = FSMField(choices=OrderStatus.CHOICES, default=OrderStatus.CREATED)
     number = models.CharField(max_length=255, verbose_name='Номер заказа')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Пользователь")
+    user = models.ForeignKey(get_user_model(), on_delete=models.PROTECT, verbose_name="Пользователь")
     total_amount = models.DecimalField(default=0, **decimalfield_kwargs, verbose_name='Полная стоимость')
     payed_amount = models.DecimalField(default=0, **decimalfield_kwargs, verbose_name='Оплачено')
+    recurring = models.ForeignKey(Recurring, on_delete=models.SET_NULL, null=True, verbose_name='Рекуррент')
+    next_payment_date = models.DateTimeField(verbose_name='Дата слелующего платежа', null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
 
