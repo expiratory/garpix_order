@@ -33,7 +33,7 @@ class RobokassaService:
     def calculate_signature(cls, *args) -> str:
         """Create signature (MD5 - default).
         """
-        return getattr(hashlib, cls.algorithm, 'md5')(':'.join(str(arg) for arg in args).encode()).hexdigest()
+        return getattr(hashlib, cls.algorithm.lower(), 'md5')(':'.join(str(arg) for arg in args).encode()).hexdigest()
 
     @classmethod
     def generate_payment_link(cls, payment) -> str:
