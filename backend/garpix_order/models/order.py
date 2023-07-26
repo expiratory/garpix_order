@@ -35,7 +35,7 @@ class BaseOrder(PolymorphicModel):
     user = models.ForeignKey(get_user_model(), on_delete=models.PROTECT, verbose_name="Пользователь")
     total_amount = models.DecimalField(default=0, **decimalfield_kwargs, verbose_name='Полная стоимость')
     payed_amount = models.DecimalField(default=0, **decimalfield_kwargs, verbose_name='Оплачено')
-    recurring = models.ForeignKey(Recurring, on_delete=models.SET_NULL, null=True, verbose_name='Рекуррент')
+    recurring = models.ForeignKey(Recurring, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Рекуррент')
     next_payment_date = models.DateTimeField(verbose_name='Дата слелующего платежа', null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
