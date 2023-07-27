@@ -1,3 +1,5 @@
+import json
+
 from django.db import models
 from polymorphic.models import PolymorphicModel
 from django_fsm import RETURN_VALUE, FSMField, transition
@@ -9,6 +11,7 @@ class BasePayment(PolymorphicModel):
     Базовая модель для хранения полученыых платежей по заказу. 
     Можно наследоваться для создания своих способов оплаты. 
     """
+
     class PaymentStatus:
         CREATED = 'created'
         PENDING = 'pending'
@@ -32,14 +35,22 @@ class BasePayment(PolymorphicModel):
             (CLOSED, 'CLOSED')
         )
 
-    title = models.CharField(max_length=255, verbose_name='Название', default='')
-    order = models.ForeignKey('garpix_order.BaseOrder', on_delete=models.CASCADE, verbose_name='Заказ', related_name='payments')
-    amount = models.DecimalField(decimal_places=2, max_digits=12, verbose_name='Сумма', default=0)
+    class PaymentType(models.TextChoices):
+        """Тип платежа"""
+        MANUAL = 'MANUAL', _('Ручной')
+        AUTO = 'AUTO', _('Автоматический')
+
+    title = models.CharField(max_length=255, verbose_name=_('Название'), default='')
+    order = models.ForeignKey('garpix_order.BaseOrder', on_delete=models.CASCADE, verbose_name=_('Заказ'),
+                              related_name='payments')
+    amount = models.DecimalField(decimal_places=2, max_digits=12, verbose_name=_('Сумма'), default=0)
     status = FSMField(choices=PaymentStatus.CHOICES, default=PaymentStatus.CREATED)
-    client_data = models.JSONField(verbose_name='Client payment process data', blank=True, null=True)
-    provider_data = models.JSONField(verbose_name='Provider payment process data', blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
+    client_data = models.JSONField(verbose_name=_('Данные процесса оплаты клиента'), blank=True, null=True)
+    provider_data = models.JSONField(verbose_name=_('Данные процесса оплаты провайдера'), blank=True, null=True)
+    payment_type = models.CharField(max_length=6, choices=PaymentType.choices, default=PaymentType.MANUAL,
+                                    verbose_name=_('Тип платежа'))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Дата изменения'))
 
     @classmethod
     def make_refunded(cls, instance):
@@ -120,9 +131,13 @@ class BasePayment(PolymorphicModel):
     def closed(self):
         pass
 
+    def set_provider_data(self, data):
+        self.provider_data = json.dumps(data)
+        self.save()
+
     def __str__(self):
         return self.title
 
     class Meta:
-        verbose_name = 'Платеж'
-        verbose_name_plural = 'Платежи'
+        verbose_name = _('Платеж')
+        verbose_name_plural = _('Платежи')
