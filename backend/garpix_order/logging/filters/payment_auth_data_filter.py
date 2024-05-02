@@ -2,7 +2,7 @@ import re
 import logging
 
 
-class AuthDataFilter(logging.Filter):
+class PaymentAuthDataFilter(logging.Filter):
     pattern = re.compile(r"&?(userName|password|token)=[^&]*")
 
     def filter(self, record):

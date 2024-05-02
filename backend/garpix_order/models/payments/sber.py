@@ -26,11 +26,6 @@ class SberPaymentStatus:
 
 
 class SberPayment(BasePayment):
-    sber_payment_status = models.IntegerField(
-        verbose_name=_('Статус платежа в Сбере'),
-        choices=SberPaymentStatus.SBER_PAYMENT_STATUS_CHOICES,
-        default=SberPaymentStatus.WITHOUT_STATUS
-    )
     external_payment_id = models.CharField(
         max_length=255,
         verbose_name=_('Внешний идентификатор платежа'),

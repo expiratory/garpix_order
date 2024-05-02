@@ -18,7 +18,7 @@ from ..types.sber import (
 )
 
 
-logger = logging.getLogger('garpix_order')
+logger = logging.getLogger(__name__)
 
 
 # Sber REST Docs - https://securecardpayment.ru/wiki/doku.php/integration:api:rest:start
@@ -87,6 +87,7 @@ class SberService:
     def _request(self, url: str, params: Type[TypedDict]) -> dict:
         try:
             response = requests.get(url=url, params=params, timeout=self.TIMEOUT)
+            logger.info(f'Request URL: {response.request.url}')
             response.raise_for_status()
             return json.loads(response.content)
         except RequestException as e:
@@ -142,7 +143,6 @@ class SberService:
 
         if order_status:  # Пришел внешний статус заказа
             order_status = int(order_status)
-            payment.sber_payment_status = order_status
             self._change_payment_status(payment=payment, order_status=order_status)
 
         if error_code and int(error_code) != 0:  # Произошла системная ошибка

@@ -40,9 +40,7 @@ pip install python-json-logger
 ```
 
 ```python
-import logging.config
-
-from garpix_order.filters import AuthDataFilter
+from garpix_order.logging.filters import PaymentAuthDataFilter
 
 
 LOGGING = {
@@ -50,7 +48,7 @@ LOGGING = {
     "disable_existing_loggers": False,
     "filters": {
         "auth_data_filter": {
-            "()": AuthDataFilter,
+            "()": PaymentAuthDataFilter,
         }
     },
     "formatters": {
@@ -68,9 +66,6 @@ LOGGING = {
             "filters": ["auth_data_filter"],
         }
     },
-    "loggers": {"garpix_order": {"handlers": ["stdout"], "level": "ERROR"}},
+    "loggers": {"garpix_order.services.sber": {"handlers": ["stdout"], "level": "INFO", "propagate": False}},
 }
-
-
-logging.config.dictConfig(LOGGING)
 ```
