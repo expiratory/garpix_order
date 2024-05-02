@@ -30,3 +30,47 @@ class Invoice(BasePayment):
 `full_amount` - метод возвращает полную сумма заказа. 
 
 **Invoice** - Основная модель для отслеживания статуса оплаты (транзакция). Содержит `status` с типом FSM.
+
+## Логирование ошибок при запросах к эквайрингу (на данный момент поддерживается только в SberService)
+
+Пример добавления логирования в settings.py с использованием библиотеки python-json-logger:
+
+```commandline
+pip install python-json-logger
+```
+
+```python
+import logging.config
+
+from garpix_order.filters import AuthDataFilter
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "auth_data_filter": {
+            "()": AuthDataFilter,
+        }
+    },
+    "formatters": {
+        "json": {
+            "format": "%(asctime)s %(levelname)s %(message)s %(module)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%SZ",
+            "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
+        }
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "json",
+            "filters": ["auth_data_filter"],
+        }
+    },
+    "loggers": {"garpix_order": {"handlers": ["stdout"], "level": "ERROR"}},
+}
+
+
+logging.config.dictConfig(LOGGING)
+```

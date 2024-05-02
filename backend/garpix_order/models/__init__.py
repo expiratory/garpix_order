@@ -4,6 +4,8 @@ from .payment import BasePayment
 from .payments import (
     CashPayment,
     CloudPayment,
-    RobokassaPayment
+    RobokassaPayment,
+    SberPayment,
+    SberPaymentStatus
 )
 from .config import Config
