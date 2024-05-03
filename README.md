@@ -31,6 +31,9 @@ class Invoice(BasePayment):
 
 **Invoice** - Основная модель для отслеживания статуса оплаты (транзакция). Содержит `status` с типом FSM.
 
+**SberPayment** Модель для платежей Сбера. При необходимости расширения - в settings.py можно определить
+**SBER_PAYMENT_MODEL** = 'path.to.your.app.models.SberPaymentModel'
+
 ## Логирование ошибок при запросах к эквайрингу (на данный момент поддерживается только в SberService)
 
 Пример добавления логирования в settings.py с использованием библиотеки python-json-logger:
