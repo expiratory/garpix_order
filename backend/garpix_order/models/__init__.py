@@ -5,6 +5,7 @@ from .payments import (
     CashPayment,
     CloudPayment,
     RobokassaPayment,
+    AbstractSberPayment,
     SberPayment,
     SberPaymentStatus
 )
