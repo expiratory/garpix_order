@@ -8,6 +8,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 
 from django.conf import settings
+from django.utils.module_loading import import_string
 
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
@@ -35,6 +36,12 @@ class SberService:
 
     def __init__(self) -> None:
         super().__init__()
+
+    def _get_payment_model(self):
+        payment_model_path = getattr(settings, 'SBER_PAYMENT_MODEL', None)
+        if payment_model_path is None:
+            return SberPayment
+        return import_string(payment_model_path)
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
         """
@@ -149,7 +156,7 @@ class SberService:
             title=f'Платеж по заказу № {order.id}',
         )
 
-        return SberPayment.objects.create(**payment_creation_data)
+        return self._get_payment_model().objects.create(**payment_creation_data)
 
     def update_payment(self, payment: BasePayment) -> None:
         """
