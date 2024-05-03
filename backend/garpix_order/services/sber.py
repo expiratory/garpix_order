@@ -37,6 +37,9 @@ class SberService:
         super().__init__()
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
+        """
+        Возвращает params для запроса при создании платежа.
+        """
         return CreatePaymentData(
             token=self.TOKEN,
             orderNumber=f'ls{time.time()}',
@@ -49,6 +52,9 @@ class SberService:
         )
 
     def _make_params_for_get_payment_data(self, external_payment_id: str) -> GetPaymentData:
+        """
+        Возвращает params для запроса при получении статуса платежа.
+        """
         return GetPaymentData(
             token=self.TOKEN,
             orderId=external_payment_id,
@@ -56,6 +62,9 @@ class SberService:
         )
 
     def _change_payment_status(self, payment: BasePayment, order_status: int) -> None:
+        """
+        Изменяет статус модели SberPayment в зависимости от полученного от Сбера статуса.
+        """
         if order_status == SberPaymentStatus.WAITING_FOR_CAPTURE:
             payment.waiting_for_capture()
         elif order_status == SberPaymentStatus.FULL_PAID:
@@ -70,6 +79,9 @@ class SberService:
         payment.save()
 
     def _compute_my_checksum(self, secret_key: bytes, callback_data: str) -> str:
+        """
+        Вычисляет чексумму из данных полученных в callback-уведомлении.
+        """
         h = hmac.HMAC(secret_key, hashes.SHA256(), backend=default_backend())
         h.update(callback_data.encode())
         my_checksum = h.finalize().hex().upper()
@@ -77,6 +89,9 @@ class SberService:
         return my_checksum
 
     def _get_cryptographic_key(self) -> Optional[bytes]:
+        """
+        Возвращает криптографический ключ для вычисления чексуммы.
+        """
         secret_key = self.CRYPTOGRAPHIC_KEY
 
         if not secret_key:
@@ -85,6 +100,10 @@ class SberService:
         return secret_key.encode()
 
     def _request(self, url: str, params: Type[TypedDict]) -> dict:
+        """
+        Отправляет GET-запрос и возвращает полученные данные в виде словаря.
+        Логирует url запроса и ошибку в случае возникновения.
+        """
         try:
             response = requests.get(url=url, params=params, timeout=self.TIMEOUT)
             logger.info(f'Request URL: {response.request.url}')
@@ -95,6 +114,9 @@ class SberService:
             raise e
 
     def create_payment(self, order: BaseOrder, **kwargs) -> BasePayment:
+        """
+        Создает платеж в системе Сбера. Возвращает модель SberPayment со ссылкой на оплату в поле payment_link.
+        """
         params = self._make_params_for_create_payment(order=order, **kwargs)
 
         created_payment_data = self._request(url=self.URLS['register'], params=params)
@@ -130,6 +152,10 @@ class SberService:
         return SberPayment.objects.create(**payment_creation_data)
 
     def update_payment(self, payment: BasePayment) -> None:
+        """
+        Обновляет модель SberPayment с соответствующим внешним id платежа в системе Сбера на основании статуса,
+        полученного от сбера в callback-уведомлении.
+        """
         if not payment.external_payment_id:
             return None
 
@@ -149,6 +175,10 @@ class SberService:
             payment.save()
 
     def callback(self, data: dict, **kwargs) -> Response:
+        """
+        Получает данные из callback-уведомления, сверяет полученную от Сбера чексумму с рассчитанной нами на основании
+        криптографического ключа, если они совпадают, то обновляет статус платежа.
+        """
         data.pop('sign_alias', None)
         checksum = data.pop('checksum', None)
         callback_data = ''.join([f'{k};{v};' for k, v in sorted(list(data.items()))])
