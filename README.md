@@ -47,7 +47,7 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {
-        "auth_data_filter": {
+        "payment_auth_data_filter": {
             "()": PaymentAuthDataFilter,
         }
     },
