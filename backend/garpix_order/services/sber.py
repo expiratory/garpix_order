@@ -42,7 +42,7 @@ class SberService:
         if payment_model_path is None:
             return SberPayment
         payment_model = import_string(payment_model_path)
-        return payment_model if isinstance(payment_model, SberPayment) else SberPayment
+        return payment_model if issubclass(payment_model, SberPayment) else SberPayment
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
         """
