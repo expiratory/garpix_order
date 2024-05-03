@@ -13,7 +13,7 @@ from django.utils.module_loading import import_string
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
-from ..models import BaseOrder, BasePayment, SberPayment, SberPaymentStatus
+from ..models import BaseOrder, BasePayment, SberPayment, SberPaymentStatus, AbstractSberPayment
 from ..types.sber import (
     CreatePaymentData, GetPaymentData, PaymentCreationData
 )
@@ -42,7 +42,7 @@ class SberService:
         if payment_model_path is None:
             return SberPayment
         payment_model = import_string(payment_model_path)
-        return payment_model if issubclass(payment_model, SberPayment) else SberPayment
+        return payment_model if issubclass(payment_model, AbstractSberPayment) else SberPayment
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
         """
@@ -191,7 +191,7 @@ class SberService:
         checksum = data.pop('checksum', None)
         callback_data = ''.join([f'{k};{v};' for k, v in sorted(list(data.items()))])
 
-        payment = SberPayment.objects.filter(external_payment_id=data.get('mdOrder')).first()
+        payment = self.get_payment_model().objects.filter(external_payment_id=data.get('mdOrder')).first()
 
         if not payment:
             return Response(status=HTTP_400_BAD_REQUEST)
