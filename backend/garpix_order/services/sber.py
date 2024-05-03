@@ -37,11 +37,12 @@ class SberService:
     def __init__(self) -> None:
         super().__init__()
 
-    def _get_payment_model(self):
+    def get_payment_model(self):
         payment_model_path = getattr(settings, 'SBER_PAYMENT_MODEL', None)
         if payment_model_path is None:
             return SberPayment
-        return import_string(payment_model_path)
+        payment_model = import_string(payment_model_path)
+        return payment_model if isinstance(payment_model, SberPayment) else SberPayment
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
         """
@@ -156,7 +157,7 @@ class SberService:
             title=f'Платеж по заказу № {order.id}',
         )
 
-        return self._get_payment_model().objects.create(**payment_creation_data)
+        return self.get_payment_model().objects.create(**payment_creation_data)
 
     def update_payment(self, payment: BasePayment) -> None:
         """
