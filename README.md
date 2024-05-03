@@ -63,7 +63,7 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
             "formatter": "json",
-            "filters": ["auth_data_filter"],
+            "filters": ["payment_auth_data_filter"],
         }
     },
     "loggers": {"garpix_order.services.sber": {"handlers": ["stdout"], "level": "INFO", "propagate": False}},
