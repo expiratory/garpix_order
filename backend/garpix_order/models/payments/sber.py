@@ -25,7 +25,7 @@ class SberPaymentStatus:
     )
 
 
-class SberPayment(BasePayment):
+class AbstractSberPayment(BasePayment):
     external_payment_id = models.CharField(
         max_length=255,
         verbose_name=_('Внешний идентификатор платежа'),
@@ -38,5 +38,10 @@ class SberPayment(BasePayment):
     )
 
     class Meta:
+        abstract = True
         verbose_name = _('Платеж в Сбере')
         verbose_name_plural = _('Платежи в Сбере')
+
+
+class SberPayment(AbstractSberPayment):
+    pass
