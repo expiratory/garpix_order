@@ -200,3 +200,6 @@ class SberService:
             return Response(status=HTTP_200_OK)
 
         return Response(status=HTTP_400_BAD_REQUEST)
+
+
+sber_service = SberService()
