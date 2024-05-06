@@ -6,7 +6,6 @@ from .payments import (
     CloudPayment,
     RobokassaPayment,
     AbstractSberPayment,
-    SberPayment,
     SberPaymentStatus
 )
 from .config import Config

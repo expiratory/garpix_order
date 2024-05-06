@@ -31,10 +31,18 @@ class Invoice(BasePayment):
 
 **Invoice** - Основная модель для отслеживания статуса оплаты (транзакция). Содержит `status` с типом FSM.
 
-**SberPayment** Модель для платежей Сбера. При необходимости расширения - в settings.py можно определить
-**SBER_PAYMENT_MODEL** = 'path.to.your.app.models.SberPaymentModel'
+## Эквайринг Сбер
 
-## Логирование ошибок при запросах к эквайрингу (на данный момент поддерживается только в SberService)
+**BaseSberPayment** Абстрактная модель для платежей Сбера. **Для работы необходимо** создать свою модель-наследник,
+затем указать путь до нее в settings.py, например:
+```python
+SBER_PAYMENT_MODEL = 'path.to.your.app.models.SberPaymentModel'
+```
+
+Методы для создания платежа, получение его данных от провайдера и callback
+находятся в garpix_order.services.sber.SberService.
+
+### Логирование ошибок при запросах к эквайрингу (на данный момент поддерживается только в SberService)
 
 Пример добавления логирования в settings.py с использованием библиотеки python-json-logger:
 

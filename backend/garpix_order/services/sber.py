@@ -13,10 +13,11 @@ from django.utils.module_loading import import_string
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
-from ..models import BaseOrder, BasePayment, SberPayment, SberPaymentStatus, AbstractSberPayment
+from ..models import BaseOrder, BasePayment, SberPaymentStatus, AbstractSberPayment
 from ..types.sber import (
     CreatePaymentData, GetPaymentData, PaymentCreationData
 )
+from ..exceptions import UndefinedModelForSberPaymentException, InvalidModelForSberPaymentException
 
 
 logger = logging.getLogger(__name__)
@@ -39,10 +40,16 @@ class SberService:
 
     def get_payment_model(self):
         payment_model_path = getattr(settings, 'SBER_PAYMENT_MODEL', None)
+
         if payment_model_path is None:
-            return SberPayment
+            raise UndefinedModelForSberPaymentException
+
         payment_model = import_string(payment_model_path)
-        return payment_model if issubclass(payment_model, AbstractSberPayment) else SberPayment
+
+        if issubclass(payment_model, AbstractSberPayment):
+            return payment_model
+
+        raise InvalidModelForSberPaymentException
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
         """
