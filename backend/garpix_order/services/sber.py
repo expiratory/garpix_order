@@ -46,10 +46,10 @@ class SberService:
 
         payment_model = import_string(payment_model_path)
 
-        if issubclass(payment_model, AbstractSberPayment):
-            return payment_model
+        if not issubclass(payment_model, AbstractSberPayment):
+            raise InvalidModelForSberPaymentException
 
-        raise InvalidModelForSberPaymentException
+        return payment_model
 
     def _make_params_for_create_payment(self, order: BaseOrder, **kwargs) -> CreatePaymentData:
         """
