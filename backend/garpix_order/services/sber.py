@@ -80,15 +80,20 @@ class SberService:
         """
         Изменяет статус модели SberPayment в зависимости от полученного от Сбера статуса.
         """
-        if order_status == SberPaymentStatus.WAITING_FOR_CAPTURE:
+        if order_status == SberPaymentStatus.PENDING and payment.status != BasePayment.PaymentStatus.PENDING:
+            payment.pending()
+        elif (
+                order_status == SberPaymentStatus.WAITING_FOR_CAPTURE
+                and payment.status != BasePayment.PaymentStatus.WAITING_FOR_CAPTURE
+        ):
             payment.waiting_for_capture()
-        elif order_status == SberPaymentStatus.FULL_PAID:
+        elif order_status == SberPaymentStatus.FULL_PAID and payment.status != BasePayment.PaymentStatus.SUCCEEDED:
             payment.succeeded()
-        elif order_status == SberPaymentStatus.CANCELLED:
+        elif order_status == SberPaymentStatus.CANCELLED and payment.status != BasePayment.PaymentStatus.CANCELED:
             payment.canceled()
-        elif order_status == SberPaymentStatus.REFUNDED:
+        elif order_status == SberPaymentStatus.REFUNDED and payment.status != BasePayment.PaymentStatus.REFUNDED:
             payment.refunded()
-        elif order_status == SberPaymentStatus.DECLINED:
+        elif order_status == SberPaymentStatus.DECLINED and payment.status != BasePayment.PaymentStatus.FAILED:
             payment.failed()
 
         payment.save()
