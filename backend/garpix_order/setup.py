@@ -32,5 +32,6 @@ setup(
     install_requires=[
         'Django >= 1.11',
         'djangorestframework >= 3.8',
+        'django-fsm == 3.0.0',
     ],
 )
