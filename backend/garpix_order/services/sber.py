@@ -120,8 +120,8 @@ class SberService:
         Логирует url запроса и ошибку в случае возникновения.
         """
         try:
-            cert_url = 'https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer'
-            response = requests.get(url=url, params=params, timeout=self.TIMEOUT, cert=cert_url)
+            cert_path = settings.SBER.get('cert_path', None)
+            response = requests.get(url=url, params=params, timeout=self.TIMEOUT, verify=cert_path)
             logger.info(f'Request URL: {response.request.url}')
             response.raise_for_status()
             return json.loads(response.content)
