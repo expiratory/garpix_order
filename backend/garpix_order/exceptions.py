@@ -13,5 +13,5 @@ class InvalidModelPaymentException(BasePaymentException):
 
 
 class InvalidOrderStatusPaymentException(BasePaymentException):
-    def __init__(self, message="Не поддерживаемый статус заказа."):
+    def __init__(self, message="Неподдерживаемый статус заказа."):
         super().__init__(message)
