@@ -13,13 +13,13 @@ from django.utils.module_loading import import_string
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
-from django_fsm import TransitionNotAllowed
-
 from ..models import BaseOrder, BasePayment, SberPaymentStatus, AbstractSberPayment
 from ..types.sber import (
     CreatePaymentData, GetPaymentData, PaymentCreationData
 )
-from ..exceptions import UndefinedModelForSberPaymentException, InvalidModelForSberPaymentException
+from ..exceptions import (
+    UndefinedModelPaymentException, InvalidModelPaymentException, InvalidOrderStatusPaymentException
+)
 
 
 logger = logging.getLogger(__name__)
@@ -44,12 +44,12 @@ class SberService:
         payment_model_path = getattr(settings, 'SBER_PAYMENT_MODEL', None)
 
         if payment_model_path is None:
-            raise UndefinedModelForSberPaymentException
+            raise UndefinedModelPaymentException
 
         payment_model = import_string(payment_model_path)
 
         if not issubclass(payment_model, AbstractSberPayment):
-            raise InvalidModelForSberPaymentException
+            raise InvalidModelPaymentException
 
         return payment_model
 
@@ -82,21 +82,20 @@ class SberService:
         """
         Изменяет статус модели SberPayment в зависимости от полученного от Сбера статуса.
         """
-        try:
-            if order_status == SberPaymentStatus.PENDING:
-                payment.pending()
-            elif order_status == SberPaymentStatus.WAITING_FOR_CAPTURE:
-                payment.waiting_for_capture()
-            elif order_status == SberPaymentStatus.FULL_PAID:
-                payment.succeeded()
-            elif order_status == SberPaymentStatus.CANCELLED:
-                payment.canceled()
-            elif order_status == SberPaymentStatus.REFUNDED:
-                payment.refunded()
-            elif order_status == SberPaymentStatus.DECLINED:
-                payment.failed()
-        except TransitionNotAllowed as e:
-            logger.error(f"Error during changing payment status: {e}")
+        if order_status == SberPaymentStatus.PENDING:
+            payment.pending()
+        elif order_status == SberPaymentStatus.WAITING_FOR_CAPTURE:
+            payment.waiting_for_capture()
+        elif order_status == SberPaymentStatus.FULL_PAID:
+            payment.succeeded()
+        elif order_status == SberPaymentStatus.CANCELLED:
+            payment.canceled()
+        elif order_status == SberPaymentStatus.REFUNDED:
+            payment.refunded()
+        elif order_status == SberPaymentStatus.DECLINED:
+            payment.failed()
+        else:
+            raise InvalidOrderStatusPaymentException
 
         payment.save()
 
