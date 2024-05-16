@@ -17,7 +17,9 @@ from ..models import BaseOrder, BasePayment, SberPaymentStatus, AbstractSberPaym
 from ..types.sber import (
     CreatePaymentData, GetPaymentData, PaymentCreationData
 )
-from ..exceptions import UndefinedModelForSberPaymentException, InvalidModelForSberPaymentException
+from ..exceptions import (
+    UndefinedModelPaymentException, InvalidModelPaymentException, InvalidOrderStatusPaymentException
+)
 
 
 logger = logging.getLogger(__name__)
@@ -42,12 +44,12 @@ class SberService:
         payment_model_path = getattr(settings, 'SBER_PAYMENT_MODEL', None)
 
         if payment_model_path is None:
-            raise UndefinedModelForSberPaymentException
+            raise UndefinedModelPaymentException
 
         payment_model = import_string(payment_model_path)
 
         if not issubclass(payment_model, AbstractSberPayment):
-            raise InvalidModelForSberPaymentException
+            raise InvalidModelPaymentException
 
         return payment_model
 
@@ -80,7 +82,9 @@ class SberService:
         """
         Изменяет статус модели SberPayment в зависимости от полученного от Сбера статуса.
         """
-        if order_status == SberPaymentStatus.WAITING_FOR_CAPTURE:
+        if order_status == SberPaymentStatus.PENDING:
+            payment.pending()
+        elif order_status == SberPaymentStatus.WAITING_FOR_CAPTURE:
             payment.waiting_for_capture()
         elif order_status == SberPaymentStatus.FULL_PAID:
             payment.succeeded()
@@ -90,6 +94,8 @@ class SberService:
             payment.refunded()
         elif order_status == SberPaymentStatus.DECLINED:
             payment.failed()
+        else:
+            raise InvalidOrderStatusPaymentException
 
         payment.save()
 
@@ -120,7 +126,8 @@ class SberService:
         Логирует url запроса и ошибку в случае возникновения.
         """
         try:
-            response = requests.get(url=url, params=params, timeout=self.TIMEOUT)
+            cert_path = settings.SBER.get('cert_path', None)
+            response = requests.get(url=url, params=params, timeout=self.TIMEOUT, verify=cert_path)
             logger.info(f'Request URL: {response.request.url}')
             response.raise_for_status()
             return json.loads(response.content)

@@ -23,4 +23,5 @@ SBER = {
     'api_url': env('SBER_API_URL', ''),
     'token': env('SBER_TOKEN', ''),
     'cryptographic_key': env('SBER_CRYPTOGRAPHIC_KEY', ''),
+    'cert_path': '',
 }
