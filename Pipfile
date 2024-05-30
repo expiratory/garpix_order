@@ -11,6 +11,7 @@ django-fsm = "*"
 django-fsm-admin = "*"
 coverage = "*"
 psycopg2-binary = ">=2.9.3"
+m2r = "==0.3.1"
 
 [dev-packages]
 

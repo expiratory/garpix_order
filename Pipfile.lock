@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2e6e9ddb4f355d7a1334ca0b60b14c1f97644216a04d375a532fb699f468db41"
+            "sha256": "3d2b79457ebd2cd5be09c04bd46cd63bc2ddf46348475a8e2afbda8e96245278"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -607,11 +607,11 @@
         },
         "docutils": {
             "hashes": [
-                "sha256:33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6",
-                "sha256:5e1de4d849fee02c63b040a4a3fd567f4ab104defd8a5511fbbc24a8a017efbc"
+                "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6",
+                "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==0.19"
+            "version": "==0.20.1"
         },
         "drf-spectacular": {
             "hashes": [
@@ -959,9 +959,10 @@
         },
         "m2r": {
             "hashes": [
-                "sha256:bf90bad66cda1164b17e5ba4a037806d2443f2a4d5ddc9f6a5554a0322aaed99"
+                "sha256:aafb67fc49cfb1d89e46a3443ac747e15f4bb42df20ed04f067ad9efbee256ab"
             ],
-            "version": "==0.2.1"
+            "index": "pypi",
+            "version": "==0.3.1"
         },
         "mando": {
             "hashes": [
