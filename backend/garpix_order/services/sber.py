@@ -15,7 +15,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
 from ..models import BaseOrder, BasePayment, SberPaymentStatus, AbstractSberPayment
 from ..types.sber import (
-    CreatePaymentData, GetPaymentData, PaymentCreationData
+    CreatePaymentData, GetPaymentData, PaymentCreationData, FailedPaymentCreationData
 )
 from ..exceptions import (
     UndefinedModelPaymentException, InvalidModelPaymentException, InvalidOrderStatusPaymentException
@@ -152,13 +152,18 @@ class SberService:
 
         # Произошла системная ошибка
         if (error_code and int(error_code) != 0) or not external_payment_id or not payment_link:
-            payment = order.make_full_payment_sber(
+            payment_creation_data = FailedPaymentCreationData(
+                order=order,
+                amount=order.total_amount,
                 client_data=json.dumps(params, ensure_ascii=False),
                 provider_data=json.dumps(created_payment_data, ensure_ascii=False),
                 title=f'Платеж по заказу № {order.id}',
             )
+
+            payment = self.get_payment_model().objects.create(**payment_creation_data)
             payment.failed()
             payment.save()
+
             return payment
 
         payment_creation_data = PaymentCreationData(
