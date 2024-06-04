@@ -29,3 +29,11 @@ class PaymentCreationData(TypedDict):
     client_data: str
     provider_data: str
     title: str
+
+
+class FailedPaymentCreationData(TypedDict):
+    order: BaseOrder
+    amount: Decimal
+    client_data: str
+    provider_data: str
+    title: str
