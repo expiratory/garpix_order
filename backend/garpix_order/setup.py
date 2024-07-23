@@ -30,7 +30,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'Django >= 1.11',
+        'Django >= 1.11 < 5',
         'djangorestframework >= 3.8',
         'django-fsm == 3.0.0',
     ],
