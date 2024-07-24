@@ -9,7 +9,7 @@ with open(path.join(settings.BASE_DIR, '..', 'README.md'), encoding='utf-8') as 
 
 setup(
     name='garpix_order',
-    version='1.0.0-rc6',
+    version='1.0.0-rc7',
     description='',
     long_description=long_description,
     url='https://github.com/garpixcms/garpix_order',
@@ -30,7 +30,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'Django >= 1.11',
+        'Django >= 3.1, < 5',
         'djangorestframework >= 3.8',
         'django-fsm == 3.0.0',
     ],
