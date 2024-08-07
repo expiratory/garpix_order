@@ -59,23 +59,18 @@ class SberService:
         """
         return CreatePaymentData(
             token=self.TOKEN,
-            orderNumber=f'ls{time.time()}',
             amount=int(order.total_amount) * 100,
-            currency=643,
-            returnUrl=kwargs.get('return_url', ''),
-            description=kwargs.get('description', ''),
-            language='ru',
-            jsonParams=kwargs.get('json_params', '{}')
+            **kwargs
         )
 
-    def _make_params_for_get_payment_data(self, external_payment_id: str) -> GetPaymentData:
+    def _make_params_for_get_payment_data(self, external_payment_id: str, **kwargs) -> GetPaymentData:
         """
         Возвращает params для запроса при получении статуса платежа.
         """
         return GetPaymentData(
             token=self.TOKEN,
             orderId=external_payment_id,
-            language='ru',
+            language=kwargs.get('language', 'ru'),
         )
 
     def _change_payment_status(self, payment: BasePayment, order_status: int) -> None:
@@ -178,7 +173,7 @@ class SberService:
 
         return self.get_payment_model().objects.create(**payment_creation_data)
 
-    def update_payment(self, payment: BasePayment) -> None:
+    def update_payment(self, payment: BasePayment, **kwargs) -> None:
         """
         Обновляет модель SberPayment с соответствующим внешним id платежа в системе Сбера на основании статуса,
         полученного от сбера в callback-уведомлении.
@@ -186,7 +181,7 @@ class SberService:
         if not payment.external_payment_id:
             return None
 
-        params = self._make_params_for_get_payment_data(external_payment_id=payment.external_payment_id)
+        params = self._make_params_for_get_payment_data(external_payment_id=payment.external_payment_id, **kwargs)
 
         payment_data = self._request(url=self.URLS['get_order_status_extended'], params=params)
 
@@ -223,7 +218,7 @@ class SberService:
         my_checksum = self._compute_my_checksum(secret_key=secret_key, callback_data=callback_data)
 
         if checksum == my_checksum:
-            self.update_payment(payment=payment)
+            self.update_payment(payment=payment, **kwargs)
             return Response(status=HTTP_200_OK)
 
         return Response(status=HTTP_400_BAD_REQUEST)

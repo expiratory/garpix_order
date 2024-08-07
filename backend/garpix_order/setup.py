@@ -9,7 +9,7 @@ with open(path.join(settings.BASE_DIR, '..', 'README.md'), encoding='utf-8') as 
 
 setup(
     name='garpix_order',
-    version='1.0.0-rc7',
+    version='1.0.0-rc8',
     description='',
     long_description=long_description,
     url='https://github.com/garpixcms/garpix_order',
