@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 class SberService:
     API_URL = settings.SBER.get('api_url')
-    TOKEN = settings.SBER.get('token')
     CRYPTOGRAPHIC_KEY = settings.SBER.get('cryptographic_key')
     URLS = {
         'register': f'{API_URL}/register.do',
@@ -58,7 +57,6 @@ class SberService:
         Возвращает params для запроса при создании платежа.
         """
         return CreatePaymentData(
-            token=self.TOKEN,
             amount=int(order.total_amount) * 100,
             **kwargs
         )
@@ -68,9 +66,8 @@ class SberService:
         Возвращает params для запроса при получении статуса платежа.
         """
         return GetPaymentData(
-            token=self.TOKEN,
             orderId=external_payment_id,
-            language=kwargs.get('language', 'ru'),
+            **kwargs
         )
 
     def _change_payment_status(self, payment: BasePayment, order_status: int) -> None:
@@ -143,7 +140,7 @@ class SberService:
         error_code = created_payment_data.get('errorCode')  # Если error_code == 0 или не пришел, значит ошибок нет
 
         params = dict(params)
-        params.pop('token')
+        params.pop('token', None)
 
         # Произошла системная ошибка
         if (error_code and int(error_code) != 0) or not external_payment_id or not payment_link:
