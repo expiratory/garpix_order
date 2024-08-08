@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class SberService:
     API_URL = settings.SBER.get('api_url')
+    TOKEN = settings.SBER.get('token')
     CRYPTOGRAPHIC_KEY = settings.SBER.get('cryptographic_key')
     URLS = {
         'register': f'{API_URL}/register.do',
@@ -56,8 +57,11 @@ class SberService:
         """
         Возвращает params для запроса при создании платежа.
         """
+        assert 'returnUrl' in kwargs, f'You must include "returnUrl" parameter in kwargs for {self.__class__.__name__}.create_payment() method.'
         return CreatePaymentData(
+            token=self.TOKEN,
             amount=int(order.total_amount) * 100,
+            orderNumber=order.number,
             **kwargs
         )
 
@@ -66,6 +70,7 @@ class SberService:
         Возвращает params для запроса при получении статуса платежа.
         """
         return GetPaymentData(
+            token=self.TOKEN,
             orderId=external_payment_id,
             **kwargs
         )
