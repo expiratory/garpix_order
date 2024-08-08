@@ -5,14 +5,14 @@ from ..models.order import BaseOrder
 
 
 class CreatePaymentData(TypedDict, total=False):
-    token: str # Токен магазина
+    token: str  # Токен магазина
     orderNumber: str  # Номер (идентификатор) заказа в системе магазина.
     amount: int  # Сумма платежа в копейках.
     returnUrl: str  # URL перенаправления пользователя в случае успешной оплаты.
 
 
 class GetPaymentData(TypedDict, total=False):
-    token: str # Токен магазина
+    token: str  # Токен магазина
     orderId: str  # Номер (идентификатор) заказа в системе магазина.
 
 
