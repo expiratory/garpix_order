@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django_fsm import FSMField, transition
 from polymorphic.models import PolymorphicModel
 
@@ -13,8 +14,8 @@ class BaseOrderItem(PolymorphicModel):
         return self.amount * self.quantity
 
     class Meta:
-        verbose_name = 'Продукт заказа'
-        verbose_name_plural = 'Продукты заказа'
+        verbose_name = _('Объект заказа')
+        verbose_name_plural = _('Объекты заказа')
 
     def __str__(self):
         return f'Объект заказа - {self.order}'

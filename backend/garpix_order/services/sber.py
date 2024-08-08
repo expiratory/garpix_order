@@ -57,25 +57,22 @@ class SberService:
         """
         Возвращает params для запроса при создании платежа.
         """
+        assert 'returnUrl' in kwargs, f'You must include "returnUrl" parameter in kwargs for {self.__class__.__name__}.create_payment() method.'
         return CreatePaymentData(
             token=self.TOKEN,
-            orderNumber=f'ls{time.time()}',
             amount=int(order.total_amount) * 100,
-            currency=643,
-            returnUrl=kwargs.get('return_url', ''),
-            description=kwargs.get('description', ''),
-            language='ru',
-            jsonParams=kwargs.get('json_params', '{}')
+            orderNumber=order.number,
+            **kwargs
         )
 
-    def _make_params_for_get_payment_data(self, external_payment_id: str) -> GetPaymentData:
+    def _make_params_for_get_payment_data(self, external_payment_id: str, **kwargs) -> GetPaymentData:
         """
         Возвращает params для запроса при получении статуса платежа.
         """
         return GetPaymentData(
             token=self.TOKEN,
             orderId=external_payment_id,
-            language='ru',
+            **kwargs
         )
 
     def _change_payment_status(self, payment: BasePayment, order_status: int) -> None:
@@ -148,7 +145,7 @@ class SberService:
         error_code = created_payment_data.get('errorCode')  # Если error_code == 0 или не пришел, значит ошибок нет
 
         params = dict(params)
-        params.pop('token')
+        params.pop('token', None)
 
         # Произошла системная ошибка
         if (error_code and int(error_code) != 0) or not external_payment_id or not payment_link:
@@ -178,7 +175,7 @@ class SberService:
 
         return self.get_payment_model().objects.create(**payment_creation_data)
 
-    def update_payment(self, payment: BasePayment) -> None:
+    def update_payment(self, payment: BasePayment, **kwargs) -> None:
         """
         Обновляет модель SberPayment с соответствующим внешним id платежа в системе Сбера на основании статуса,
         полученного от сбера в callback-уведомлении.
@@ -186,7 +183,7 @@ class SberService:
         if not payment.external_payment_id:
             return None
 
-        params = self._make_params_for_get_payment_data(external_payment_id=payment.external_payment_id)
+        params = self._make_params_for_get_payment_data(external_payment_id=payment.external_payment_id, **kwargs)
 
         payment_data = self._request(url=self.URLS['get_order_status_extended'], params=params)
 
@@ -223,7 +220,7 @@ class SberService:
         my_checksum = self._compute_my_checksum(secret_key=secret_key, callback_data=callback_data)
 
         if checksum == my_checksum:
-            self.update_payment(payment=payment)
+            self.update_payment(payment=payment, **kwargs)
             return Response(status=HTTP_200_OK)
 
         return Response(status=HTTP_400_BAD_REQUEST)

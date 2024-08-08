@@ -3,6 +3,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.db.models import F, Sum, DecimalField
+from django.utils.translation import gettext_lazy as _
 from django_fsm import RETURN_VALUE, FSMField, transition
 from polymorphic.models import PolymorphicModel
 from garpix_order.models.payment import BasePayment
@@ -103,6 +104,6 @@ class BaseOrder(PolymorphicModel):
         return self.number
 
     class Meta:
-        verbose_name = 'Базовый ордер'
-        verbose_name_plural = 'Базовые ордера'
+        verbose_name = _('Базовый заказ')
+        verbose_name_plural = _('Базовые заказы')
         ordering = ('-created_at',)

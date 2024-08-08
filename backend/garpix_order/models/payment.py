@@ -8,8 +8,8 @@ from django.utils.translation import gettext_lazy as _
 
 class BasePayment(PolymorphicModel):
     """
-    Базовая модель для хранения полученыых платежей по заказу. 
-    Можно наследоваться для создания своих способов оплаты. 
+    Базовая модель для хранения полученыых платежей по заказу.
+    Можно наследоваться для создания своих способов оплаты.
     """
 
     class PaymentStatus:
@@ -139,5 +139,5 @@ class BasePayment(PolymorphicModel):
         return self.title
 
     class Meta:
-        verbose_name = _('Платеж')
-        verbose_name_plural = _('Платежи')
+        verbose_name = _('Базовый платеж')
+        verbose_name_plural = _('Базовые платежи')
