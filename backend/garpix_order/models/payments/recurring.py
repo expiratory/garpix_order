@@ -31,8 +31,12 @@ class Recurring(ActiveMixin, models.Model):
         today = datetime.datetime.today()
         if self.frequency == self.RecurringFrequency.MONTH:
             month = today.month + 1
-            year = today.year + month // 12
-            month = month % 12 + 1
+            year = today.year
+
+            if month > 12:
+                month = 1
+                year += 1
+
             day = min(today.day, calendar.monthrange(year, month)[1])
             return datetime.date(year, month, day)
         else:
