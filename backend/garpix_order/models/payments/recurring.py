@@ -3,6 +3,7 @@ import datetime
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from garpix_utils.models import ActiveMixin
 
 
@@ -28,7 +29,7 @@ class Recurring(ActiveMixin, models.Model):
         verbose_name_plural = _('Рекурренты')
 
     def get_next_payment_date(self):
-        today = datetime.datetime.today()
+        today = timezone.now().date()
         if self.frequency == self.RecurringFrequency.MONTH:
             month = today.month + 1
             year = today.year

@@ -28,7 +28,6 @@ class RobokassaPayment(BasePayment):
             self.save()
             return False, msg
         self.succeeded()
-        self.order.pay(self.amount)
         if auto:
             self.order.next_payment_date = self.order.recurring.get_next_payment_date()
         self.order.save()

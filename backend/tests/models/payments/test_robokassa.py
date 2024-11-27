@@ -1,14 +1,18 @@
+import json
 from django.utils import timezone
 from django_fsm import TransitionNotAllowed
+from django.conf import settings
 from app.tests import TestMixin
 from garpix_order.models.payments.recurring import Recurring
 from garpix_order.models.payments.robokassa import RobokassaPayment
 from garpix_order.models.order import BaseOrder
+from garpix_order.services.robokassa import robokassa_service
 
-class RecurringTestCase(TestMixin):
+class RobokassaPaymentTestCase(TestMixin):
     @classmethod
     def setUpTestData(cls):
         cls._create_user()
+        cls.service = robokassa_service
 
     def setUp(self):
         self.recurring = Recurring.active_objects.create(
@@ -125,24 +129,12 @@ class RecurringTestCase(TestMixin):
         self.assertEqual(self.order_auto_paid.status, BaseOrder.OrderStatus.PAYED_PARTIAL)
 
     def test_refund_manual_unpaid_payment(self):
-        exception_raised = False
-
-        try:
+        with self.assertRaises(TransitionNotAllowed):
             self.robokassa_manual_payment_unpaid.refund()
-        except TransitionNotAllowed:
-            exception_raised = True
-
-        self.assertEqual(exception_raised, True, 'Unpaid manual RobokassaPayment was allowed to be refunded')
 
     def test_refund_auto_unpaid_payment(self):
-        exception_raised = False
-
-        try:
+        with self.assertRaises(TransitionNotAllowed):
             self.robokassa_auto_payment_unpaid.refund()
-        except TransitionNotAllowed:
-            exception_raised = True
-
-        self.assertEqual(exception_raised, True, 'Unpaid auto RobokassaPayment was allowed to be refunded')
 
     def test_cancel_manual_pending_payment(self):
         pending_manual_payment = RobokassaPayment.objects.create(
@@ -175,24 +167,130 @@ class RecurringTestCase(TestMixin):
         self.robokassa_manual_payment_paid.status = RobokassaPayment.PaymentStatus.SUCCEEDED
         self.robokassa_manual_payment_paid.save(update_fields=['status'])
 
-        exception_raised = False
-
-        try:
+        with self.assertRaises(TransitionNotAllowed):
             self.robokassa_manual_payment_paid.cancel()
-        except TransitionNotAllowed:
-            exception_raised = True
-
-        self.assertEqual(exception_raised, True, 'Paid manual RobokassaPayment was allowed to be canceled')
 
     def test_cancel_auto_paid_payment(self):
         self.robokassa_auto_payment_paid.status = RobokassaPayment.PaymentStatus.SUCCEEDED
         self.robokassa_auto_payment_paid.save(update_fields=['status'])
 
-        exception_raised = False
-
-        try:
+        with self.assertRaises(TransitionNotAllowed):
             self.robokassa_auto_payment_paid.cancel()
-        except TransitionNotAllowed:
-            exception_raised = True
 
-        self.assertEqual(exception_raised, True, 'Paid auto RobokassaPayment was allowed to be canceled')
+    def test_pay_pending_manual_payment(self):
+        created_payment = RobokassaPayment.objects.create(
+            order=self.order_manual_unpaid,
+            amount=300,
+            status=RobokassaPayment.PaymentStatus.PENDING,
+        )
+
+        result, error = created_payment.pay(data={})
+
+        self.assertEqual(result, False)
+        self.assertEqual(error, 'Invoice already in process')
+
+    def test_pay_pending_auto_payment(self):
+        created_payment = RobokassaPayment.objects.create(
+            order=self.order_auto_unpaid,
+            amount=300,
+            status=RobokassaPayment.PaymentStatus.PENDING,
+            payment_type=RobokassaPayment.PaymentType.AUTO
+        )
+
+        result, error = created_payment.pay(data={}, auto=True)
+
+        self.assertEqual(result, False)
+        self.assertEqual(error, 'Invoice already in process')
+
+    def test_pay_zero_amount_manual_payment(self):
+        zero_amount_payment = RobokassaPayment.objects.create(
+            order=self.order_manual_unpaid,
+            amount=0,
+            status=RobokassaPayment.PaymentStatus.CREATED,
+        )
+
+        result, error = zero_amount_payment.pay(data={})
+
+        self.assertEqual(result, False)
+        self.assertEqual(error, 'It is not possible to pay 0 amount')
+        self.assertEqual(zero_amount_payment.provider_data, json.dumps({'msg': 'It is not possible to pay 0 amount'}))
+        self.assertEqual(zero_amount_payment.status, RobokassaPayment.PaymentStatus.FAILED)
+
+    def test_pay_zero_amount_auto_payment(self):
+        zero_amount_payment = RobokassaPayment.objects.create(
+            order=self.order_auto_unpaid,
+            amount=0,
+            status=RobokassaPayment.PaymentStatus.CREATED,
+            payment_type=RobokassaPayment.PaymentType.AUTO
+        )
+
+        result, error = zero_amount_payment.pay(data={}, auto=True)
+
+        self.assertEqual(result, False)
+        self.assertEqual(error, 'It is not possible to pay 0 amount')
+        self.assertEqual(zero_amount_payment.provider_data, json.dumps({'msg': 'It is not possible to pay 0 amount'}))
+        self.assertEqual(zero_amount_payment.status, RobokassaPayment.PaymentStatus.FAILED)
+
+    def test_pay_invalid_signature_manual_payment(self):
+        invalid_signature_payment = RobokassaPayment.objects.create(
+            order=self.order_manual_unpaid,
+            amount=300,
+            status=RobokassaPayment.PaymentStatus.CREATED,
+        )
+
+        result, error = invalid_signature_payment.pay(data={'OutSum': 'OutSum', 'SignatureValue': 'SignatureValue'})
+
+        self.assertEqual(result, False)
+        self.assertEqual(error, 'Invalid signature')
+        self.assertEqual(invalid_signature_payment.provider_data, json.dumps({'msg': 'Invalid signature'}))
+        self.assertEqual(invalid_signature_payment.status, RobokassaPayment.PaymentStatus.FAILED)
+
+    def test_pay_invalid_signature_auto_payment(self):
+        invalid_signature_payment = RobokassaPayment.objects.create(
+            order=self.order_auto_unpaid,
+            amount=300,
+            status=RobokassaPayment.PaymentStatus.CREATED,
+            payment_type=RobokassaPayment.PaymentType.AUTO
+        )
+
+        result, error = invalid_signature_payment.pay(data={'OutSum': 'OutSum', 'SignatureValue': 'SignatureValue'}, auto=True)
+
+        self.assertEqual(result, False)
+        self.assertEqual(error, 'Invalid signature')
+        self.assertEqual(invalid_signature_payment.provider_data, json.dumps({'msg': 'Invalid signature'}))
+        self.assertEqual(invalid_signature_payment.status, RobokassaPayment.PaymentStatus.FAILED)
+
+    def test_pay_success_manual_payment(self):
+        success_payment = RobokassaPayment.objects.create(
+            order=self.order_manual_unpaid,
+            amount=300,
+            status=RobokassaPayment.PaymentStatus.CREATED,
+        )
+
+        signature = self.service.calculate_signature('OutSum', success_payment.id, settings.ROBOKASSA['PASSWORD_2'])
+        result = success_payment.pay(data={'OutSum': 'OutSum', 'SignatureValue': signature})
+
+        self.order_manual_paid.refresh_from_db()
+
+        self.assertEqual(result, True)
+        self.assertEqual(success_payment.provider_data, json.dumps({'msg': 'Payment is successful'}))
+        self.assertEqual(success_payment.status, RobokassaPayment.PaymentStatus.SUCCEEDED)
+        self.assertEqual(self.order_manual_paid.status, BaseOrder.OrderStatus.PAYED_FULL)
+
+    def test_pay_success_auto_payment(self):
+        success_payment = RobokassaPayment.objects.create(
+            order=self.order_auto_unpaid,
+            amount=300,
+            status=RobokassaPayment.PaymentStatus.CREATED,
+            payment_type=RobokassaPayment.PaymentType.AUTO
+        )
+
+        signature = self.service.calculate_signature('OutSum', success_payment.id, settings.ROBOKASSA['PASSWORD_2'])
+        result = success_payment.pay(data={'OutSum': 'OutSum', 'SignatureValue': signature}, auto=True)
+
+        self.order_auto_paid.refresh_from_db()
+
+        self.assertEqual(result, True)
+        self.assertEqual(success_payment.provider_data, json.dumps({'msg': 'Payment is successful'}))
+        self.assertEqual(success_payment.status, RobokassaPayment.PaymentStatus.SUCCEEDED)
+        self.assertEqual(self.order_auto_paid.status, BaseOrder.OrderStatus.PAYED_FULL)
