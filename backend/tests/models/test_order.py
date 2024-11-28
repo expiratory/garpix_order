@@ -1,4 +1,3 @@
-from django_fsm import TransitionNotAllowed
 from app.tests import TestMixin
 from garpix_order.models.order import BaseOrder
 from garpix_order.models.payment import BasePayment
@@ -8,9 +7,6 @@ class BaseOrderTestCase(TestMixin):
     @classmethod
     def setUpTestData(cls):
         cls._create_user()
-
-    def setUp(self):
-        return super().setUp()
 
     def test_make_full_payment_without_kwargs(self):
         order = BaseOrder.objects.create(number='test', user=self.user, total_amount=100)
