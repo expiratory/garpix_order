@@ -40,7 +40,7 @@ class CloudpaymentView(TemplateView):
             return JsonResponse({
                 'publicId': config.cloudpayments_public_id,
                 'description': 'Оплата товара',
-                'amount': payment.price,
+                'amount': payment.amount,
                 'currency': 'RUB',
                 'invoiceId': payment.order_number,
                 'skin': "mini",
