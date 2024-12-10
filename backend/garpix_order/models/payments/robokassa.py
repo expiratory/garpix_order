@@ -31,9 +31,10 @@ class RobokassaPayment(BasePayment):
         if auto:
             self.order.next_payment_date = self.order.recurring.get_next_payment_date()
         self.order.save()
-        self.set_provider_data({'msg': 'Payment is successful'})
+        msg = 'Payment is successful'
+        self.set_provider_data({'msg': msg})
         self.save()
-        return True
+        return True, msg
 
     def refund(self):
         self.set_provider_data({'msg': f'Payment is refunded {self.amount}'})
