@@ -9,11 +9,9 @@ from garpix_order.services.robokassa import robokassa_service
 
 User = get_user_model()
 
-
 @pytest.fixture
 def api_client():
     return APIClient()
-
 
 @pytest.fixture
 def base_order(db):
@@ -24,7 +22,6 @@ def base_order(db):
         number="test_order"
     )
 
-
 @pytest.fixture
 def robokassa_payment(db, base_order):
     return RobokassaPayment.objects.create(
@@ -32,7 +29,6 @@ def robokassa_payment(db, base_order):
         title="Test Payment",
         order=base_order
     )
-
 
 @pytest.mark.django_db
 class TestRobokassaView:
@@ -65,7 +61,11 @@ class TestRobokassaView:
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
-        assert response.data == [{'title': 'Test Payment', 'order': base_order.id, 'amount': '100.00'}]
+        assert response.data == [{
+            'title': 'Test Payment',
+            'order': base_order.id,
+            'amount': '100.00'
+        }]
 
     def test_pay_success(self, api_client, robokassa_payment, mocker):
         url = reverse('garpix_order:robokassa-pay', args=[robokassa_payment.id])

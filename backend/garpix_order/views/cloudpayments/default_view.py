@@ -5,8 +5,6 @@ from garpix_order.utils import hmac_sha256
 from decimal import Decimal
 from django.db import transaction
 
-
-
 PAYMENT_STATUS_COMPLETED = CloudPayment.PAYMENT_STATUS_COMPLETED
 PAYMENT_STATUS_CANCELLED = CloudPayment.PAYMENT_STATUS_CANCELLED
 PAYMENT_STATUS_DECLINED = CloudPayment.PAYMENT_STATUS_DECLINED
