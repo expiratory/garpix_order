@@ -120,7 +120,7 @@ class CloudpaymentView(TemplateView):
     @classmethod
     @csrf_exempt
     def fail_view(cls, request) -> Optional[JsonResponse]:
-        cls._default_view(request)
+        return cls._default_view(request)
 
     @staticmethod
     def _get_response_data(request) -> dict:
